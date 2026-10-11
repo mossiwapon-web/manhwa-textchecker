@@ -1,26 +1,20 @@
-# Manhwa Text-Checker
+# Manhwa Text-Checker v3 — Exclusion Rules & Three-Panel UI
 
-A small browser-based text formatter for manhwa typesetting workflows.
+## สิ่งที่เปลี่ยน
+- เพิ่มช่อง “คำที่ไม่ต้องการ Track” แยกตามคำค้นหา
+- Tracking และ Replace All จะข้ามคำค้นหาที่อยู่ภายในคำยกเว้น
+- ใส่คำยกเว้นได้หลายคำ คั่นด้วยจุลภาค (,), semicolon (;) หรือขึ้นบรรทัดใหม่
+- ปรับ Checker&Edit เป็น 3 ช่องใหญ่: Original Content, Edited Result, Tracking Log
+- เมนู Checker เดิมยังคงอยู่
 
-## Run locally
-Open `index.html` in a modern browser. An internet connection is needed to load React, Babel, SweetAlert2, and Google Fonts from their CDNs.
+## ตัวอย่าง
+คำค้นหา: `พี่`
+คำแทนที่: `ท่านพี่`
+คำที่ไม่ต้องการ Track: `พี่ใหญ่, พี่สาว`
 
-## Publish with GitHub Pages
-1. Create a GitHub repository (for example, `manhwa-text-checker`).
-2. Upload `index.html` and `README.md` to the repository root.
-3. Open **Settings → Pages**.
-4. Under **Build and deployment**, choose **Deploy from a branch**.
-5. Select the `main` branch and `/ (root)`, then Save.
-6. Wait for GitHub Pages to provide your site URL.
+ถ้าข้อความมี “พี่ใหญ่” ระบบจะไม่ Track หรือแทนที่คำว่า “พี่” ภายใน “พี่ใหญ่” แต่จะยังจัดการคำว่า “พี่” ที่ไม่ได้อยู่ในวลีที่ยกเว้น
 
-## Features
-- Two-pane original/result editor
-- Paste from clipboard and copy checked text
-- Import `.txt` and export UTF-8 `.txt`
-- SweetAlert2 notifications
-- Removes trailing spaces/tabs at the end of lines
-- Adds one blank line after lines containing Thai characters
-- Keeps English/Korean lines adjacent; existing repeated blank lines are normalized
+## ติดตั้ง
+แตก ZIP แล้วนำ `index.html` และ `README.md` จากโฟลเดอร์ `manhwa-text-checker` ไปแทนที่ไฟล์เดิมใน GitHub Repository จากนั้น Commit changes และรอ GitHub Pages อัปเดต
 
-## Notes about formatting
-The checker treats each line containing Thai characters as a Thai line/sentence and adds a blank line after it. If a Thai sentence wraps across multiple lines, split/merge the text into one sentence per line before checking for the most predictable result. Text is processed locally in the browser; no text content is sent to a backend.
+ข้อมูลทั้งหมดประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดข้อความไปยังเซิร์ฟเวอร์ของแอป

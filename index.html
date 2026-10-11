@@ -31,6 +31,9 @@
     .rules{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.rule{padding:15px;border:1px solid var(--line);border-radius:14px;background:#121625}.rule b{display:block;font-size:13px;margin-bottom:6px}.rule p{font-size:12px;color:var(--muted);line-height:1.6;margin:0}.rule-icon{font-size:17px;margin-bottom:9px}
     footer{text-align:center;color:#68738d;font-size:11px;margin-top:28px}
     .swal2-popup{background:#171c2c!important;color:#f4f6ff!important;border:1px solid #343b52!important;border-radius:18px!important}.swal2-title,.swal2-html-container{color:#f4f6ff!important}.swal2-confirm{border-radius:10px!important}
+
+    .nav-tabs{display:flex;gap:8px;padding:6px;border:1px solid var(--line);background:#101422;border-radius:14px;width:max-content;max-width:100%;margin:0 0 20px}.nav-tab{border:0;background:transparent;color:#9ca8c3;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer}.nav-tab.active{background:linear-gradient(135deg,#8978ff,#6755f4);color:white}.edit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}.rules-card{margin-bottom:16px}.edit-card{border:1px solid var(--line);border-radius:18px;background:#121625ef;overflow:hidden;min-width:0}.section-pad{padding:17px}.term-list{display:flex;flex-direction:column;gap:9px}.term-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) 34px;gap:7px;align-items:center}.term-labels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) 34px;gap:7px;margin-bottom:6px;color:#9aa4bd;font-size:11px}.ignore-input{border-color:#66502e!important}.edit-grid .edit-textarea{min-height:520px}.edit-grid .log-list{max-height:620px;min-height:520px}.term-input{width:100%;min-width:0;border:1px solid #343b52;background:#0f1320;color:#f4f6ff;border-radius:10px;padding:10px;font-size:13px;outline:0}.term-input:focus{border-color:#8b7cff}.icon-btn{height:36px;border:1px solid var(--line);background:#1b2133;color:#d9deef;border-radius:10px;cursor:pointer}.log-list{display:flex;flex-direction:column;gap:9px;max-height:430px;overflow:auto;padding:14px}.log-item{border:1px solid #30384f;background:#171d2d;border-radius:12px;padding:11px 12px}.log-meta{font-size:11px;color:#aab4cd;margin-bottom:7px}.line-badge{background:#302b56;color:#c9c0ff;border-radius:7px;padding:3px 7px;font-weight:700;margin-right:7px}.matched-text{font-size:13px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}mark{background:#ffe08a;color:#28200a;border-radius:3px;padding:0 2px}.empty-log{padding:25px 15px;text-align:center;color:#8490aa;font-size:12px;line-height:1.8}.edit-textarea{display:block;width:100%;min-height:270px;resize:vertical;background:transparent;border:0;outline:0;color:#e8ebf7;padding:18px;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Thai",monospace;font-size:13px;line-height:1.8}.mini-note{font-size:11px;color:#8f9ab4;line-height:1.7;margin-top:10px}@media(max-width:1050px){.edit-grid{grid-template-columns:1fr}.edit-grid .edit-textarea{min-height:280px}.edit-grid .log-list{max-height:380px;min-height:160px}}@media(max-width:650px){.term-row{grid-template-columns:1fr 1fr 1fr 30px;gap:5px}.term-input{padding:8px 6px;font-size:12px}.term-labels{grid-template-columns:1fr 1fr 1fr 30px;gap:5px;font-size:10px}}
+
     @media(max-width:850px){.layout{grid-template-columns:1fr}.rules{grid-template-columns:1fr}.app{padding:20px 14px}.pane textarea{min-height:280px}.intro{padding:16px}}
   </style>
 </head>
@@ -43,6 +46,11 @@ function App(){
   const [original,setOriginal] = useState("");
   const [checked,setChecked] = useState("");
   const [hasChecked,setHasChecked] = useState(false);
+  const [activeTab,setActiveTab] = useState("checker");
+  const [pairs,setPairs] = useState([{find:"",replace:""}]);
+  const [trackingLogs,setTrackingLogs] = useState(null);
+  const [editOutput,setEditOutput] = useState("");
+  const editOutputRef = useRef(null);
   const fileRef = useRef(null);
   const outputRef = useRef(null);
 
@@ -73,6 +81,62 @@ function App(){
     while(output.length && output[output.length-1]==="") output.pop();
     return output.join("\n");
   }
+  const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const validPairs = () => pairs.filter(p=>p.find.trim()!=="");
+  // Excluded phrases are literal phrases; matches inside them are ignored for both Tracking and Replace All.
+  const splitExcludes = p => (p.ignore||"").split(/[,\n;]+/).map(v=>v.trim()).filter(Boolean);
+  const getAllowedMatches = (text,term,p) => {
+    if(!term)return [];
+    const excludes=splitExcludes(p).map(value=>({value, re:new RegExp(escapeRegExp(value),"giu")}));
+    const ignored=[];
+    excludes.forEach(item=>{let m;while((m=item.re.exec(text))!==null){ignored.push({start:m.index,end:m.index+m[0].length});if(!m[0].length)item.re.lastIndex++;}});
+    const re=new RegExp(escapeRegExp(term),"giu"), matches=[];let m;
+    while((m=re.exec(text))!==null){
+      const start=m.index,end=start+m[0].length;
+      if(!ignored.some(r=>start>=r.start&&end<=r.end))matches.push({index:start,text:m[0]});
+      if(!m[0].length)re.lastIndex++;
+    }
+    return matches;
+  };
+  const highlightTerms = (line,foundPairs) => {
+    const matches=[];
+    foundPairs.forEach(p=>getAllowedMatches(line,p.find.trim(),p).forEach(m=>matches.push({...m,term:p.find.trim()})));
+    matches.sort((a,b)=>a.index-b.index||b.text.length-a.text.length);
+    const result=[];let cursor=0;
+    matches.forEach((m,i)=>{if(m.index<cursor)return;if(m.index>cursor)result.push(line.slice(cursor,m.index));result.push(<mark key={"m"+i}>{line.slice(m.index,m.index+m.text.length)}</mark>);cursor=m.index+m.text.length;});
+    if(cursor<line.length)result.push(line.slice(cursor));
+    return result.length?result:line;
+  };
+  const trackTerms = () => {
+    const terms=validPairs();
+    if(!original.trim()||!terms.length){Swal.fire({icon:"info",title:!original.trim()?"ยังไม่มีเนื้อหาให้ค้นหา":"กรุณาใส่คำค้นหา",text:!original.trim()?"วางข้อความหรือ Import ไฟล์ .txt ก่อน":"เพิ่มคำค้นหาอย่างน้อย 1 คำ"});return;}
+    const logs=[];
+    original.replace(/\r\n?/g,"\n").split("\n").forEach((line,i)=>{
+      const found=terms.filter(p=>getAllowedMatches(line,p.find.trim(),p).length>0);
+      if(found.length)logs.push({lineNumber:i+1,line,terms:found.map(p=>p.find.trim())});
+    });
+    setTrackingLogs(logs);
+    if(logs.length) Swal.fire({icon:"success",title:"Tracking เสร็จแล้ว",text:`พบคำค้นหาใน ${logs.length} บรรทัด (ไม่นับคำที่อยู่ในรายการยกเว้น)`,timer:1600,showConfirmButton:false});
+    else Swal.fire({icon:"warning",title:"ไม่พบคำค้นหา",text:"ไม่พบคำค้นหาที่ไม่อยู่ในรายการยกเว้น"});
+  };
+  const replaceTerms = () => {
+    const terms=validPairs();
+    if(!original.trim()||!terms.length){Swal.fire({icon:"info",title:"ข้อมูลไม่ครบ",text:"ใส่เนื้อหาต้นฉบับและคำค้นหาอย่างน้อย 1 คำก่อน"});return;}
+    let result=original;
+    terms.slice().sort((a,b)=>b.find.trim().length-a.find.trim().length).forEach(p=>{
+      const term=p.find.trim();
+      const matches=getAllowedMatches(result,term,p);
+      if(!matches.length)return;
+      const byIndex=new Map(matches.map(m=>[m.index,m]));
+      const re=new RegExp(escapeRegExp(term),"giu");
+      result=result.replace(re,(match,offset)=>byIndex.has(offset)?p.replace:match);
+    });
+    setEditOutput(result);
+    Swal.fire({icon:"success",title:"แทนที่คำเรียบร้อย",text:"แทนที่เฉพาะคำค้นหาที่ไม่อยู่ในรายการคำยกเว้นแล้ว",timer:1600,showConfirmButton:false});
+  };
+  const copyEditOutput = async () => {if(!editOutput){Swal.fire({icon:"info",title:"ยังไม่มีผลลัพธ์",text:"กด Replace All ก่อน"});return;}try{await navigator.clipboard.writeText(editOutput);Swal.fire({icon:"success",title:"คัดลอกแล้ว",timer:1200,showConfirmButton:false});}catch(e){editOutputRef.current?.select();document.execCommand("copy");Swal.fire({icon:"success",title:"คัดลอกข้อความแล้ว",timer:1200,showConfirmButton:false});}};
+  const exportEditOutput = () => {if(!editOutput){Swal.fire({icon:"info",title:"ยังไม่มีผลลัพธ์",text:"กด Replace All ก่อน"});return;}const blob=new Blob(["\\uFEFF",editOutput],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="manhwa-text-edited.txt";a.click();URL.revokeObjectURL(url);Swal.fire({icon:"success",title:"Export สำเร็จ",timer:1200,showConfirmButton:false});};
+
   const runCheck = () => {
     if(!original.trim()){
       Swal.fire({icon:"info",title:"ยังไม่มีข้อความ",text:"วางข้อความหรือ Import ไฟล์ .txt ก่อนเริ่มตรวจสอบ",confirmButtonText:"เข้าใจแล้ว"});
@@ -88,7 +152,7 @@ function App(){
       Swal.fire({icon:"warning",title:"รองรับเฉพาะไฟล์ .txt",text:"กรุณาเลือกไฟล์ข้อความนามสกุล .txt",confirmButtonText:"เลือกใหม่"}); e.target.value=""; return;
     }
     const reader=new FileReader();
-    reader.onload=()=>{setOriginal(String(reader.result||""));setChecked("");setHasChecked(false);Swal.fire({icon:"success",title:"นำเข้าไฟล์สำเร็จ",text:file.name,timer:1400,showConfirmButton:false});};
+    reader.onload=()=>{setOriginal(String(reader.result||""));setChecked("");setHasChecked(false);setTrackingLogs(null);setEditOutput("");Swal.fire({icon:"success",title:"นำเข้าไฟล์สำเร็จ",text:file.name,timer:1400,showConfirmButton:false});};
     reader.onerror=()=>Swal.fire({icon:"error",title:"อ่านไฟล์ไม่สำเร็จ",text:"ลองเลือกไฟล์อีกครั้ง"});
     reader.readAsText(file,"UTF-8"); e.target.value="";
   };
@@ -113,6 +177,8 @@ function App(){
       <div className="brand"><div className="logo">文</div><div><h1>Manhwa Text-Checker</h1><p className="subtitle">เครื่องมือจัดรูปแบบข้อความสำหรับงาน Typesetter</p></div></div>
       <div className="status"><span className="dot"></span> Ready to check</div>
     </header>
+    <nav className="nav-tabs"><button className={"nav-tab "+(activeTab==="checker"?"active":"")} onClick={()=>setActiveTab("checker")}>✦ &nbsp; Checker</button><button className={"nav-tab "+(activeTab==="edit"?"active":"")} onClick={()=>setActiveTab("edit")}>⌕ &nbsp; Checker&amp;Edit</button></nav>
+    {activeTab==="checker" && <>
     <section className="intro"><div className="intro-icon">✦</div><div><strong>จัดข้อความให้อ่านง่าย พร้อมนำไปใช้ใน Photoshop</strong><p>วางข้อความต้นฉบับ หรือ Import ไฟล์ .txt จากนั้นกด Check Text เพื่อจัดการช่องว่างท้ายบรรทัดและเว้นบรรทัดสำหรับข้อความภาษาไทย</p></div></section>
     <div className="toolbar">
       <button className="btn primary" onClick={runCheck}>✦ &nbsp; Check Text</button>
@@ -139,6 +205,42 @@ function App(){
       <div className="rule"><div className="rule-icon">↔️</div><b>English / 한국어</b><p>คงบรรทัดภาษาอังกฤษและเกาหลีให้ต่อเนื่องกัน ไม่แทรกบรรทัดว่างเพิ่มระหว่างบรรทัดเหล่านี้</p></div>
       <div className="rule"><div className="rule-icon">¶</div><b>ประโยคภาษาไทย</b><p>เพิ่มบรรทัดว่าง 1 บรรทัดหลังบรรทัดที่มีอักษรไทย และจัดบรรทัดว่างที่ซ้ำกันให้เหลือเพียง 1 บรรทัด</p></div>
     </section>
+
+    </>}
+    {activeTab==="edit" && <>
+      <section className="intro"><div className="intro-icon">⌕</div><div><strong>Checker&amp;Edit — ค้นหา ติดตาม และแทนที่คำ</strong><p>เพิ่มคำค้นหา คำแทนที่ และคำที่ต้องการยกเว้น จากนั้นตรวจผลใน 3 ช่องหลักได้พร้อมกัน</p></div></section>
+      <div className="toolbar"><button className="btn" onClick={()=>fileRef.current?.click()}>↥ &nbsp; Import .txt</button><button className="btn" onClick={()=>{setOriginal("");setTrackingLogs(null);setEditOutput("");setPairs([{find:"",replace:"",ignore:""}]);}}>＋ &nbsp; New</button><div className="spacer"></div><button className="btn" onClick={clearAll}>⌫ &nbsp; Clear All</button></div>
+      <section className="edit-card rules-card">
+        <div className="pane-head"><div><div className="pane-title"><span className="step">⚙</span> Find &amp; Replace Rules</div><div className="pane-sub">กำหนดคำค้นหา คำแทนที่ และคำที่ไม่ต้องการ Track/Replace</div></div><span className="counter">{validPairs().length} rules</span></div>
+        <div className="section-pad">
+          <div className="term-labels"><span>คำค้นหา</span><span>คำแทนที่</span><span>คำที่ไม่ต้องการ Track</span><span></span></div>
+          <div className="term-list">{pairs.map((pair,index)=><div className="term-row" key={index}>
+            <input className="term-input" value={pair.find} onChange={e=>setPairs(old=>old.map((p,i)=>i===index?{...p,find:e.target.value}:p))} placeholder={"คำค้นหา "+(index+1)}/>
+            <input className="term-input" value={pair.replace} onChange={e=>setPairs(old=>old.map((p,i)=>i===index?{...p,replace:e.target.value}:p))} placeholder="คำแทนที่"/>
+            <input className="term-input ignore-input" value={pair.ignore||""} onChange={e=>setPairs(old=>old.map((p,i)=>i===index?{...p,ignore:e.target.value}:p))} placeholder="เช่น พี่ใหญ่, พี่สาว"/>
+            <button className="icon-btn" title="ลบกฎ" onClick={()=>setPairs(old=>old.length===1?[{find:"",replace:"",ignore:""}]:old.filter((_,i)=>i!==index))}>×</button>
+          </div>)}</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}><button className="btn" onClick={()=>setPairs(old=>[...old,{find:"",replace:"",ignore:""}])}>＋ เพิ่มคำ</button><button className="btn primary" onClick={trackTerms}>⌕ Tracking</button><button className="btn teal" onClick={replaceTerms}>⇄ Replace All</button></div>
+          <p className="mini-note">ตัวอย่าง: คำค้นหา “พี่” · คำแทนที่ “ท่านพี่” · คำยกเว้น “พี่ใหญ่” — ระบบจะไม่ Track หรือแทนที่คำว่า “พี่” ที่อยู่ภายใน “พี่ใหญ่” สามารถใส่หลายคำโดยคั่นด้วยจุลภาค (,), ; หรือขึ้นบรรทัดใหม่</p>
+        </div>
+      </section>
+      <section className="edit-grid">
+        <div className="edit-card">
+          <div className="pane-head"><div><div className="pane-title"><span className="step">01</span> Original Content</div><div className="pane-sub">เนื้อหาต้นฉบับ</div></div><span className="counter">{original.length.toLocaleString()} chars</span></div>
+          <textarea className="edit-textarea" value={original} onChange={e=>{setOriginal(e.target.value);setTrackingLogs(null);}} placeholder="วางเนื้อหาทั้งหมดที่นี่ หรือ Import .txt" spellCheck="false"/>
+          <div className="pane-foot"><button className="btn" onClick={async()=>{try{setOriginal(await navigator.clipboard.readText());setTrackingLogs(null);}catch(e){Swal.fire({icon:"info",title:"อ่าน Clipboard ไม่ได้",text:"คลิกช่องข้อความแล้วกด Ctrl + V"});}}}>▣ Paste Clipboard</button><span className="foot-note">ต้นฉบับ</span></div>
+        </div>
+        <div className="edit-card">
+          <div className="pane-head"><div><div className="pane-title"><span className="step">02</span> Edited Result</div><div className="pane-sub">ผลลัพธ์หลัง Replace All</div></div><span className="counter">{editOutput.length.toLocaleString()} chars</span></div>
+          <textarea ref={editOutputRef} className="edit-textarea" value={editOutput} onChange={e=>setEditOutput(e.target.value)} placeholder="ผลลัพธ์หลัง Replace All จะแสดงที่นี่" spellCheck="false"/>
+          <div className="pane-foot"><button className="btn teal" onClick={copyEditOutput}>▣ Copy Result</button><button className="btn primary" onClick={exportEditOutput}>↓ Export .txt</button></div>
+        </div>
+        <div className="edit-card">
+          <div className="pane-head"><div><div className="pane-title"><span className="step">03</span> Tracking Log</div><div className="pane-sub">บรรทัดที่พบคำค้นหา พร้อมไฮไลต์</div></div><span className="counter">{trackingLogs===null?"ยังไม่ค้นหา":trackingLogs.length+" บรรทัด"}</span></div>
+          {trackingLogs&&trackingLogs.length>0?<div className="log-list">{trackingLogs.map((item,i)=><div className="log-item" key={i}><div className="log-meta"><span className="line-badge">บรรทัด {item.lineNumber}</span>พบ: {item.terms.join(" · ")}</div><div className="matched-text">{highlightTerms(item.line,validPairs())}</div></div>)}</div>:<div className="empty-log">{trackingLogs===null?"กด Tracking เพื่อค้นหาคำในเนื้อหาทั้งหมด":"ไม่พบคำที่ตรงกับกฎค้นหา (หรือคำที่พบอยู่ในรายการยกเว้นทั้งหมด)"}</div>}
+        </div>
+      </section>
+    </>}
     <footer>Manhwa Text-Checker · Runs in your browser · Your text is not uploaded to a server</footer>
   </main>;
 }
