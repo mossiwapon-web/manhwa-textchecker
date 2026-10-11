@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101322" />
+  <title>Manhwa Text-Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0e17;--panel:#141827;--panel2:#191e30;--line:#2a3045;--muted:#9aa4bd;--text:#f4f6ff;--purple:#8b7cff;--purple2:#6d5dfc;--cyan:#52d6cf;--green:#4ade80}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(ellipse at 10% 0%,#242044 0,transparent 38%),radial-gradient(ellipse at 95% 15%,#12313b 0,transparent 32%),var(--bg);color:var(--text);font-family:Inter,Kanit,sans-serif;min-height:100vh}
+    button,input,textarea{font:inherit} .app{max-width:1500px;margin:auto;padding:28px 24px 38px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:28px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:14px}.logo{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#9b8cff,#5c4df0);box-shadow:0 10px 30px #6859ff40;font-size:25px}
+    h1{font-size:clamp(23px,3vw,34px);line-height:1.1;margin:0;font-weight:700;letter-spacing:-.7px}.subtitle{margin:7px 0 0;color:var(--muted);font-size:13px}
+    .status{border:1px solid #344052;border-radius:999px;padding:8px 12px;color:#c8d0e5;font-size:12px;display:flex;gap:8px;align-items:center;background:#151a29}.dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 10px #4ade8070}
+    .intro{border:1px solid #383256;background:linear-gradient(110deg,#211d3d,#151b2b 70%);border-radius:20px;padding:20px 22px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start}
+    .intro-icon{font-size:22px}.intro strong{display:block;margin-bottom:5px}.intro p{margin:0;color:#b7bfd5;font-size:13px;line-height:1.7}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+    .btn{border:1px solid var(--line);background:#1b2133;color:#edf0ff;padding:10px 15px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13px;transition:transform .16s,border-color .16s,background .16s;white-space:nowrap}
+    .btn:hover{transform:translateY(-1px);border-color:#7770ce;background:#252b43}.btn:active{transform:translateY(0)}.btn.primary{background:linear-gradient(135deg,#8978ff,#6755f4);border-color:transparent;color:white;box-shadow:0 7px 20px #6958ff2b}.btn.primary:hover{background:linear-gradient(135deg,#9b8dff,#7768ff)}.btn.teal{background:#123637;border-color:#286061;color:#9af1e9}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .spacer{flex:1}.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.pane{border:1px solid var(--line);border-radius:18px;background:#121625eF;overflow:hidden;box-shadow:0 18px 45px #00000016;min-width:0}
+    .pane-head{display:flex;justify-content:space-between;align-items:center;padding:17px 18px;border-bottom:1px solid var(--line);background:#181d2d;gap:10px}.pane-title{display:flex;align-items:center;gap:10px;font-weight:700}.step{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#302b56;color:#bcb3ff;font-size:12px}.pane.right .step{background:#12383a;color:#8ce8e1}.pane-sub{font-size:11px;color:var(--muted);margin-top:4px}.counter{font-size:11px;color:#9ca8c3;background:#22283a;padding:6px 9px;border-radius:8px;white-space:nowrap}
+    textarea{display:block;width:100%;min-height:390px;resize:vertical;background:transparent;border:0;outline:0;color:#e8ebf7;padding:18px;font-family:ui-monospace,SFMono-Regular,Consolas,"Noto Sans Thai",monospace;font-size:13px;line-height:1.8;tab-size:2}textarea::placeholder{color:#606b85}.pane-foot{padding:12px 15px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#151a29}.pane-foot .btn{padding:8px 11px;font-size:12px}.foot-note{font-size:11px;color:#8f9ab4;margin-left:auto}
+    .rules{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.rule{padding:15px;border:1px solid var(--line);border-radius:14px;background:#121625}.rule b{display:block;font-size:13px;margin-bottom:6px}.rule p{font-size:12px;color:var(--muted);line-height:1.6;margin:0}.rule-icon{font-size:17px;margin-bottom:9px}
+    footer{text-align:center;color:#68738d;font-size:11px;margin-top:28px}
+    .swal2-popup{background:#171c2c!important;color:#f4f6ff!important;border:1px solid #343b52!important;border-radius:18px!important}.swal2-title,.swal2-html-container{color:#f4f6ff!important}.swal2-confirm{border-radius:10px!important}
+    @media(max-width:850px){.layout{grid-template-columns:1fr}.rules{grid-template-columns:1fr}.app{padding:20px 14px}.pane textarea{min-height:280px}.intro{padding:16px}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useRef} = React;
+
+function App(){
+  const [original,setOriginal] = useState("");
+  const [checked,setChecked] = useState("");
+  const [hasChecked,setHasChecked] = useState(false);
+  const fileRef = useRef(null);
+  const outputRef = useRef(null);
+
+  const thaiRegex = /[\u0E00-\u0E7F]/;
+  function cleanText(input){
+    // Remove trailing spaces/tabs; preserve original text order and page-number lines.
+    const lines = input.replace(/\r\n?/g,"\n").split("\n").map(line => line.replace(/[ \t]+$/g,""));
+    const output = [];
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if(line.trim()===""){
+        // Collapse runs of blank lines to one blank line.
+        if(output.length && output[output.length-1] !== "") output.push("");
+        continue;
+      }
+      output.push(line);
+      // A line containing Thai is treated as a Thai sentence/line and followed by one blank line.
+      // English and Korean lines remain consecutive. Existing blank lines are normalized above.
+      if(thaiRegex.test(line)){
+        const next = lines.slice(i+1).find(v => v.trim()!=="");
+        if(next !== undefined && !thaiRegex.test(next) && /[\uAC00-\uD7AF]/.test(next)){
+          // Korean next line: do not insert a blank line between mixed-language dialogue.
+          continue;
+        }
+        output.push("");
+      }
+    }
+    while(output.length && output[output.length-1]==="") output.pop();
+    return output.join("\n");
+  }
+  const runCheck = () => {
+    if(!original.trim()){
+      Swal.fire({icon:"info",title:"ยังไม่มีข้อความ",text:"วางข้อความหรือ Import ไฟล์ .txt ก่อนเริ่มตรวจสอบ",confirmButtonText:"เข้าใจแล้ว"});
+      return;
+    }
+    const result = cleanText(original);
+    setChecked(result); setHasChecked(true);
+    Swal.fire({icon:"success",title:"ตรวจสอบเรียบร้อย",text:"จัดรูปแบบข้อความให้แล้ว สามารถคัดลอกหรือ Export เป็นไฟล์ .txt ได้",timer:1800,showConfirmButton:false});
+  };
+  const importFile = (e) => {
+    const file=e.target.files?.[0]; if(!file) return;
+    if(!file.name.toLowerCase().endsWith(".txt")){
+      Swal.fire({icon:"warning",title:"รองรับเฉพาะไฟล์ .txt",text:"กรุณาเลือกไฟล์ข้อความนามสกุล .txt",confirmButtonText:"เลือกใหม่"}); e.target.value=""; return;
+    }
+    const reader=new FileReader();
+    reader.onload=()=>{setOriginal(String(reader.result||""));setChecked("");setHasChecked(false);Swal.fire({icon:"success",title:"นำเข้าไฟล์สำเร็จ",text:file.name,timer:1400,showConfirmButton:false});};
+    reader.onerror=()=>Swal.fire({icon:"error",title:"อ่านไฟล์ไม่สำเร็จ",text:"ลองเลือกไฟล์อีกครั้ง"});
+    reader.readAsText(file,"UTF-8"); e.target.value="";
+  };
+  const copyOutput = async () => {
+    if(!checked){Swal.fire({icon:"info",title:"ยังไม่มีผลลัพธ์",text:"กดปุ่ม Check Text ก่อน"});return;}
+    try{await navigator.clipboard.writeText(checked);Swal.fire({icon:"success",title:"คัดลอกแล้ว",text:"คัดลอกข้อความที่ตรวจสอบแล้วไปยัง Clipboard สำเร็จ",timer:1400,showConfirmButton:false});}
+    catch(e){outputRef.current?.select();document.execCommand("copy");Swal.fire({icon:"success",title:"คัดลอกข้อความแล้ว",timer:1300,showConfirmButton:false});}
+  };
+  const exportOutput = () => {
+    if(!checked){Swal.fire({icon:"info",title:"ยังไม่มีผลลัพธ์",text:"กดปุ่ม Check Text ก่อน"});return;}
+    const blob=new Blob(["\uFEFF",checked],{type:"text/plain;charset=utf-8"});
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="manhwa-text-checked.txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    Swal.fire({icon:"success",title:"Export สำเร็จ",text:"ดาวน์โหลดไฟล์ manhwa-text-checked.txt แล้ว",timer:1600,showConfirmButton:false});
+  };
+  const clearAll = async () => {
+    if(!original && !checked)return;
+    const result=await Swal.fire({icon:"warning",title:"ล้างข้อความทั้งหมด?",text:"ข้อความต้นฉบับและผลลัพธ์จะถูกลบออกจากหน้านี้",showCancelButton:true,confirmButtonText:"ล้างข้อมูล",cancelButtonText:"ยกเลิก",confirmButtonColor:"#e05268"});
+    if(result.isConfirmed){setOriginal("");setChecked("");setHasChecked(false);Swal.fire({icon:"success",title:"ล้างข้อมูลแล้ว",timer:1000,showConfirmButton:false});}
+  };
+  return <main className="app">
+    <header>
+      <div className="brand"><div className="logo">文</div><div><h1>Manhwa Text-Checker</h1><p className="subtitle">เครื่องมือจัดรูปแบบข้อความสำหรับงาน Typesetter</p></div></div>
+      <div className="status"><span className="dot"></span> Ready to check</div>
+    </header>
+    <section className="intro"><div className="intro-icon">✦</div><div><strong>จัดข้อความให้อ่านง่าย พร้อมนำไปใช้ใน Photoshop</strong><p>วางข้อความต้นฉบับ หรือ Import ไฟล์ .txt จากนั้นกด Check Text เพื่อจัดการช่องว่างท้ายบรรทัดและเว้นบรรทัดสำหรับข้อความภาษาไทย</p></div></section>
+    <div className="toolbar">
+      <button className="btn primary" onClick={runCheck}>✦ &nbsp; Check Text</button>
+      <button className="btn" onClick={()=>fileRef.current?.click()}>↥ &nbsp; Import .txt</button>
+      <input ref={fileRef} type="file" accept=".txt,text/plain" hidden onChange={importFile}/>
+      <button className="btn" onClick={()=>{setOriginal("");setChecked("");setHasChecked(false);}}>＋ &nbsp; New</button>
+      <div className="spacer"></div>
+      <button className="btn" onClick={clearAll}>⌫ &nbsp; Clear All</button>
+    </div>
+    <section className="layout">
+      <div className="pane">
+        <div className="pane-head"><div><div className="pane-title"><span className="step">01</span> Original Text</div><div className="pane-sub">วางข้อความต้นฉบับที่นี่ หรือเปิดไฟล์ .txt</div></div><span className="counter">{original.length.toLocaleString()} chars</span></div>
+        <textarea value={original} onChange={e=>setOriginal(e.target.value)} placeholder={"วางข้อความต้นฉบับที่นี่...\n\nตัวอย่าง:\nTHIS IS THE BEGINNING.\nนี่คือจุดเริ่มต้น   \n다음 장면으로."} spellCheck="false" aria-label="Original text"></textarea>
+        <div className="pane-foot"><button className="btn" onClick={async()=>{try{setOriginal(await navigator.clipboard.readText());Swal.fire({icon:"success",title:"วางข้อความแล้ว",timer:1000,showConfirmButton:false});}catch(e){Swal.fire({icon:"info",title:"ไม่สามารถอ่าน Clipboard ได้",text:"คลิกช่องข้อความแล้วกด Ctrl + V แทน",confirmButtonText:"เข้าใจแล้ว"});}}}>▣ Paste Clipboard</button><button className="btn" onClick={()=>{setOriginal("");setChecked("");setHasChecked(false);}}>Clear</button><span className="foot-note">รับไฟล์ .txt UTF-8</span></div>
+      </div>
+      <div className="pane right">
+        <div className="pane-head"><div><div className="pane-title"><span className="step">02</span> Checked Text</div><div className="pane-sub">ข้อความที่จัดรูปแบบแล้ว พร้อมคัดลอกหรือ Export</div></div><span className="counter">{checked.length.toLocaleString()} chars</span></div>
+        <textarea ref={outputRef} value={checked} onChange={e=>{setChecked(e.target.value);setHasChecked(true);}} placeholder={"ผลลัพธ์จะแสดงที่นี่หลังจากกด\n“Check Text”"} spellCheck="false" aria-label="Checked text"></textarea>
+        <div className="pane-foot"><button className="btn teal" onClick={copyOutput}>▣ Copy Result</button><button className="btn primary" onClick={exportOutput}>↓ Export .txt</button><span className="foot-note">{hasChecked?"ตรวจสอบแล้ว":"รอการตรวจสอบ"}</span></div>
+      </div>
+    </section>
+    <section className="rules">
+      <div className="rule"><div className="rule-icon">✂️</div><b>ลบช่องว่างท้ายบรรทัด</b><p>ตัด space และ tab ที่ค้างอยู่ท้ายบรรทัด โดยไม่ลบช่องว่างระหว่างคำ</p></div>
+      <div className="rule"><div className="rule-icon">↔️</div><b>English / 한국어</b><p>คงบรรทัดภาษาอังกฤษและเกาหลีให้ต่อเนื่องกัน ไม่แทรกบรรทัดว่างเพิ่มระหว่างบรรทัดเหล่านี้</p></div>
+      <div className="rule"><div className="rule-icon">¶</div><b>ประโยคภาษาไทย</b><p>เพิ่มบรรทัดว่าง 1 บรรทัดหลังบรรทัดที่มีอักษรไทย และจัดบรรทัดว่างที่ซ้ำกันให้เหลือเพียง 1 บรรทัด</p></div>
+    </section>
+    <footer>Manhwa Text-Checker · Runs in your browser · Your text is not uploaded to a server</footer>
+  </main>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
